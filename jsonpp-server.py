@@ -13,14 +13,19 @@ class RequestHandler(BaseHTTPRequestHandler):
 <head><meta charset="UTF-8" /></head><body>
 <form method="POST" action="/">
 <div><textarea name="data"></textarea></div><div><input type="submit">
-<div><pre>{0}</pre></div>
+<div>{message}</div>
+<div><pre>{data}</pre></div>
 </form></body></html>"""
+    outputs = {
+        'data': '',
+        'message': '',
+    }
 
     def do_GET(self):
         self.send_response(200)
         self.send_header("Content-Type", "text/html")
         self.end_headers()
-        self.wfile.write(self.template.format(""))
+        self.wfile.write(self.template.format(**self.outputs))
         return
 
     def do_POST(self):
@@ -36,11 +41,14 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.end_headers()
         try:
             obj = json.loads(form['data'].value)
-            data = json.dumps(obj, sort_keys=True, indent=4, ensure_ascii=False)
-        except ValueError:
-            data = form['data'].value
-        data = cgi.escape(data)
-        self.wfile.write(self.template.format(data).encode('utf8'))
+            self.outputs['message'] = ''
+            self.outputs['data'] = json.dumps(obj, sort_keys=True, indent=4, ensure_ascii=False)
+        except ValueError as e:
+            self.outputs['message'] = 'invalid json data: [{0}]'.format(e.message)
+            self.outputs['data'] = form['data'].value
+
+        self.outputs = dict(map(lambda (k, v): (k, cgi.escape(v)), self.outputs.iteritems()))
+        self.wfile.write(self.template.format(**self.outputs).encode('utf8'))
         return
 
 
