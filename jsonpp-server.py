@@ -12,7 +12,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 <html lang="en">
 <head><meta charset="UTF-8" /></head><body>
 <form method="POST" action="/">
-<div><textarea name="data"></textarea></div><div><input type="submit">
+<div><textarea name="data" cols="70" rows="10"></textarea></div><div><input type="submit">
 <div>{message}</div>
 <div><pre>{data}</pre></div>
 </form></body></html>"""
@@ -26,6 +26,7 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/html")
         self.end_headers()
         self.wfile.write(self.template.format(**self.outputs))
+        self.wfile.close()
         return
 
     def do_POST(self):
@@ -40,7 +41,8 @@ class RequestHandler(BaseHTTPRequestHandler):
         self.send_header("Content-Type", "text/html")
         self.end_headers()
         try:
-            obj = json.loads(form['data'].value)
+            value = form['data'].value.replace("\r\n", "").replace("\n", "")
+            obj = json.loads(value)
             self.outputs['message'] = ''
             self.outputs['data'] = json.dumps(obj, sort_keys=True, indent=4, ensure_ascii=False)
         except ValueError as e:
@@ -49,6 +51,7 @@ class RequestHandler(BaseHTTPRequestHandler):
 
         self.outputs = dict(map(lambda (k, v): (k, cgi.escape(v)), self.outputs.iteritems()))
         self.wfile.write(self.template.format(**self.outputs).encode('utf8'))
+        self.wfile.close()
         return
 
 
@@ -61,8 +64,10 @@ def serve(args):
 
 def get_arg_parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--host', type=str, default='localhost'),
-    parser.add_argument('--port', type=int, default=5000),
+    parser.add_argument('--host', type=str, default='localhost',
+        help="host to listen. (default: %(default)s)")
+    parser.add_argument('--port', type=int, default=5000,
+        help="port for connection. (default: %(default)s)")
     return parser
 
 if __name__ == '__main__':
