@@ -1,13 +1,22 @@
 import requests
+import sys
 
-u = 'http://www.google.com/calendar/feeds/ja.japanese%23holiday@group.v.calendar.google.com/public/full?alt=json&max-results=100&futureevents=true'
+u = 'http://www.google.com/calendar/feeds/ja.japanese%23holiday@group.v.calendar.google.com/public/full'
+params =  {
+    'alt': 'json',
+    'max-results': 100,
+    'futureevents': 'true'
+}
 
-data = requests.get(u).json()
+res = requests.get(u, params=params)
+res.raise_for_status()
+
+data = res.json()
 print data.get('feed').get('title').get('$t')
 
 for item in data.get('feed').get('entry'):
-    # gd$when
-    # 'title']['$t']
+    # ['title']['$t']
     title = item['title']['$t']
+    # gd$when
     day = item['gd$when'][0]['startTime']
     print "{name}\t{day}".format(name = title.encode('utf8'), day=day.encode('utf8'))
